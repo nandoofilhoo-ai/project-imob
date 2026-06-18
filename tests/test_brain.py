@@ -95,6 +95,35 @@ def test_orchestrator_mock_mode(client, db_session):
         src.integrations.whatsapp_provider.EvolutionProvider.send_text = original_send
 
 
+def test_gemini_provider_mock(monkeypatch):
+    import httpx
+    
+    class MockResponse:
+        status_code = 200
+        def json(self):
+            return {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": "Olá! Você prefere casa ou apartamento?"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(httpx.Client, "post", lambda *args, **kwargs: MockResponse())
+    
+    from src.services.llm_adapter import GeminiProvider
+    provider = GeminiProvider(api_key="mock-gemini-key")
+    reply = provider.generate_reply(prompt="Oi", system_instruction="Instrucao")
+    assert reply == "Olá! Você prefere casa ou apartamento?"
+
+
 # Helpers
 def DbSession_get_qualification(db: Session, lead_id: int) -> LeadQualification:
     return db.query(LeadQualification).filter(LeadQualification.lead_id == lead_id).first()
+

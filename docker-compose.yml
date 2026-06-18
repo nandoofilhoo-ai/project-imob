@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:15-alpine
     container_name: sdr_postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -13,24 +13,23 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d imobi_sdr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
     build: .
     container_name: sdr_backend
-    restart: always
+    restart: unless-stopped
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/imobi_sdr
-      - OPENAI_API_KEY=sua-openai-key
-      - CHATWOOT_URL=https://seu-chatwoot.com
-      - CHATWOOT_ACCESS_TOKEN=seu-token
-      - CHATWOOT_ACCOUNT_ID=1
-      - EVOLUTION_API_URL=http://localhost:8080
-      - EVOLUTION_API_KEY=sua-evolution-key
-      - EVOLUTION_WEBHOOK_URL=http://web:8000/webhook/evolution
+    env_file:
+      - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

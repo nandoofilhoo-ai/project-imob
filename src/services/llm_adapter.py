@@ -101,6 +101,65 @@ class OpenAIProvider(LlmProvider):
             raise e
 
 
+class GeminiProvider(LlmProvider):
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.model = settings.GEMINI_MODEL or "gemini-1.5-flash"
+        self.url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+
+    def generate_reply(self, prompt: str, system_instruction: str = "Você é um assistente de vendas imobiliárias.") -> str:
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        body = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "systemInstruction": {
+                "parts": [
+                    {
+                        "text": system_instruction
+                    }
+                ]
+            },
+            "generationConfig": {
+                "temperature": 0.5,
+                "maxOutputTokens": 150
+            }
+        }
+        
+        start_time = time.time()
+        logger.info(f"GeminiProvider: Generating reply using model {self.model}...")
+        try:
+            with httpx.Client() as client:
+                response = client.post(self.url, json=body, headers=headers, timeout=15.0)
+                elapsed = time.time() - start_time
+                logger.info(f"Gemini API call took {elapsed:.2f} seconds. Status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    candidates = result.get("candidates", [])
+                    if candidates:
+                        content = candidates[0].get("content", {})
+                        parts = content.get("parts", [])
+                        if parts:
+                            reply = parts[0].get("text", "").strip()
+                            return reply
+                
+                logger.error(f"Gemini API error: {response.status_code} - {response.text}")
+                raise Exception(f"Gemini returned status {response.status_code}")
+        except Exception as e:
+            logger.error(f"Gemini call exception: {e}")
+            raise e
+
+
 class MockLlmProvider(LlmProvider):
     def __init__(self, suggested_question: Optional[str] = None):
         self.suggested_question = suggested_question
@@ -114,7 +173,10 @@ class MockLlmProvider(LlmProvider):
 
 
 def get_llm_provider(suggested_question: Optional[str] = None) -> LlmProvider:
-    if settings.OPENAI_API_KEY and settings.OPENAI_API_KEY != "sua-openai-key":
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "sua-gemini-key":
+        return GeminiProvider(settings.GEMINI_API_KEY)
+    elif settings.OPENAI_API_KEY and settings.OPENAI_API_KEY != "sua-openai-key":
         return OpenAIProvider(settings.OPENAI_API_KEY)
     else:
         return MockLlmProvider(suggested_question)
+

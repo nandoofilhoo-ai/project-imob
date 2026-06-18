@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     LLM_MODEL: str = "gpt-4o-mini"
 
+    # Gemini Configuration
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+
+
     # Chatwoot Configuration
     CHATWOOT_URL: Optional[str] = None
     CHATWOOT_ACCESS_TOKEN: Optional[str] = None
