@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: sdr_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: imobi_sdr
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    container_name: sdr_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/imobi_sdr
+      - OPENAI_API_KEY=sua-openai-key
+      - CHATWOOT_URL=https://seu-chatwoot.com
+      - CHATWOOT_ACCESS_TOKEN=seu-token
+      - CHATWOOT_ACCOUNT_ID=1
+      - EVOLUTION_API_URL=http://localhost:8080
+      - EVOLUTION_API_KEY=sua-evolution-key
+      - EVOLUTION_WEBHOOK_URL=http://web:8000/webhook/evolution
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
