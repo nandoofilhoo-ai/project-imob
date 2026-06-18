@@ -42,9 +42,9 @@ def run_seed():
                 tenant_id=tenant.id,
                 name="WhatsApp Principal Evolution",
                 provider="evolution",
-                provider_instance_id=settings.EVOLUTION_INSTANCE,
-                provider_token="sua-evolution-key",
-                provider_url="http://localhost:8080",
+                provider_instance_id=settings.EVOLUTION_INSTANCE_NAME or settings.EVOLUTION_INSTANCE,
+                provider_token=settings.EVOLUTION_API_KEY or "sua-evolution-key",
+                provider_url=settings.EVOLUTION_API_URL or "http://localhost:8080",
                 status="active",
                 chatwoot_inbox_id=1 # Default inbox ID mapping
             )

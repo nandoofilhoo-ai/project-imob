@@ -146,9 +146,7 @@ class EvolutionProvider(WhatsAppProvider):
                 "delay": 1200,
                 "presence": "composing"
             },
-            "textMessage": {
-                "text": text
-            }
+            "text": text
         }
         
         logger.info(f"EvolutionProvider: Sending text message to {number} via instance {instance}")
@@ -209,12 +207,15 @@ class EvolutionProvider(WhatsAppProvider):
         }
         
         body = {
-            "enabled": True,
-            "url": webhook_url,
-            "webhook_by_events": False,
-            "events": [
-                "MESSAGES_UPSERT"
-            ]
+            "webhook": {
+                "enabled": True,
+                "url": webhook_url,
+                "events": [
+                    "MESSAGES_UPSERT"
+                ],
+                "webhookByEvents": True,
+                "webhookBase64": False
+            }
         }
         
         try:

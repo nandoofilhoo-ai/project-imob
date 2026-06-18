@@ -41,7 +41,10 @@ class Settings(BaseSettings):
     EVOLUTION_API_KEY: Optional[str] = None
     EVOLUTION_WEBHOOK_URL: Optional[str] = None
     EVOLUTION_INSTANCE: str = "ImobiliariaAlfa"
-
+    EVOLUTION_INSTANCE_NAME: Optional[str] = None
+    EVOLUTION_CHANNEL_NAME: str = "WhatsApp Principal Evolution"
+    DEFAULT_TENANT_NAME: str = "Imobiliária Alfa"
+    AUTO_SYNC_EVOLUTION_CHANNEL: bool = True
 
     # General App Configuration
     APP_NAME: str = "Imobi SDR Backend"
