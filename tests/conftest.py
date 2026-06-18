@@ -4,8 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-# Force sqlite database URL for tests
+# Force sqlite database URL and default instance for tests
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["EVOLUTION_INSTANCE"] = "ImobiliariaAlfa"
+
 
 from src.core.database import Base, get_db
 from src.models import db_models  # Import models to register metadata in Base

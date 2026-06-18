@@ -4,6 +4,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.core.database import Base, engine, SessionLocal
+from src.core.config import settings
 from src.models.db_models import Tenant, TenantConfig, ChannelConfig
 from src.core.logger import get_logger
 
@@ -37,12 +38,11 @@ def run_seed():
             db.add(config)
 
             # 3. Create Channel Config (Evolution Provider)
-            # Default instance name is 'ImobiliariaAlfa' as specified in seeds
             channel = ChannelConfig(
                 tenant_id=tenant.id,
                 name="WhatsApp Principal Evolution",
                 provider="evolution",
-                provider_instance_id="ImobiliariaAlfa",
+                provider_instance_id=settings.EVOLUTION_INSTANCE,
                 provider_token="sua-evolution-key",
                 provider_url="http://localhost:8080",
                 status="active",
@@ -52,6 +52,7 @@ def run_seed():
 
             db.commit()
             logger.info("Seeding completed successfully!")
+
         else:
             logger.info("Tenant 'Imobiliária Alfa' already exists. Skipping seeding.")
     except Exception as e:

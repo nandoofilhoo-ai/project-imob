@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     EVOLUTION_API_URL: Optional[str] = None
     EVOLUTION_API_KEY: Optional[str] = None
     EVOLUTION_WEBHOOK_URL: Optional[str] = None
+    EVOLUTION_INSTANCE: str = "ImobiliariaAlfa"
+
 
     # General App Configuration
     APP_NAME: str = "Imobi SDR Backend"
