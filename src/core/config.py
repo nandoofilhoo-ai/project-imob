@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     # Evolution API Configuration
     EVOLUTION_API_URL: Optional[str] = None
     EVOLUTION_API_KEY: Optional[str] = None
+    EVOLUTION_INSTANCE_TOKEN: Optional[str] = None
     EVOLUTION_WEBHOOK_URL: Optional[str] = None
     EVOLUTION_INSTANCE: str = "ImobiliariaAlfa"
     EVOLUTION_INSTANCE_NAME: Optional[str] = None

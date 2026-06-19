@@ -24,6 +24,7 @@ def sync_evolution_channel_from_env() -> None:
         return
 
     instance_name = settings.EVOLUTION_INSTANCE_NAME or settings.EVOLUTION_INSTANCE
+    provider_token = settings.EVOLUTION_INSTANCE_TOKEN or settings.EVOLUTION_API_KEY
     if not instance_name:
         logger.info("No Evolution instance configured. Skipping Evolution channel sync.")
         return
@@ -44,7 +45,7 @@ def sync_evolution_channel_from_env() -> None:
             channel.name = settings.EVOLUTION_CHANNEL_NAME
             channel.provider_instance_id = instance_name
             channel.provider_url = settings.EVOLUTION_API_URL
-            channel.provider_token = settings.EVOLUTION_API_KEY
+            channel.provider_token = provider_token
             channel.status = "active"
             logger.info(
                 f"Updated Evolution channel id={channel.id} to instance '{instance_name}'."
@@ -55,7 +56,7 @@ def sync_evolution_channel_from_env() -> None:
                 name=settings.EVOLUTION_CHANNEL_NAME,
                 provider="evolution",
                 provider_instance_id=instance_name,
-                provider_token=settings.EVOLUTION_API_KEY,
+                provider_token=provider_token,
                 provider_url=settings.EVOLUTION_API_URL,
                 status="active",
                 chatwoot_inbox_id=1,
