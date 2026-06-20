@@ -102,6 +102,50 @@ def test_webhook_evolution_endpoint(client, db_session):
     assert any(m.text == "Quero comprar uma casa no Centro" for m in messages)
 
 
+def test_webhook_evolution_reset_command_clears_local_context(client, db_session):
+    from src.repositories.db_repositories import DbRepository
+    import src.integrations.whatsapp_provider
+
+    lead = DbRepository.create_lead(db_session, tenant_id=1, number="5511999999999", name="John Doe")
+    conversation = DbRepository.create_conversation(db_session, tenant_id=1, lead_id=lead.id, channel_config_id=1)
+    DbRepository.create_message(db_session, conversation_id=conversation.id, sender_type="lead", text="Mensagem anterior")
+    DbRepository.create_handoff(db_session, lead_id=lead.id, conversation_id=conversation.id, reason="test")
+
+    original_send = src.integrations.whatsapp_provider.EvolutionProvider.send_text
+    src.integrations.whatsapp_provider.EvolutionProvider.send_text = lambda self, channel_config, number, text: {
+        "success": True,
+        "data": {"status": "success", "message": "delivered", "text": text}
+    }
+
+    payload = {
+        "event": "messages.upsert",
+        "instance": "ImobiliariaAlfa",
+        "data": {
+            "key": {
+                "remoteJid": "5511999999999@s.whatsapp.net",
+                "fromMe": False,
+                "id": "RESET1"
+            },
+            "pushName": "John Doe",
+            "message": {
+                "conversation": "/reset"
+            },
+            "messageTimestamp": 1670000001
+        }
+    }
+
+    try:
+        response = client.post("/webhook/evolution", json=payload)
+    finally:
+        src.integrations.whatsapp_provider.EvolutionProvider.send_text = original_send
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["command"] == "reset"
+    assert db_session.query(Lead).filter(Lead.number == "5511999999999").first() is None
+
+
 def test_test_send_evolution_mock(client):
     # Call the test send route
     payload = {
