@@ -150,6 +150,26 @@ def test_gemini_provider_joins_multiple_text_parts(monkeypatch):
     assert reply == "Olá! Que ótimo que você quer comprar uma casa. E em qual bairro ou região você tem preferência?"
 
 
+def test_reset_conversation_endpoint(client, db_session):
+    lead = DbRepository.create_lead(db_session, tenant_id=1, number="5511999999999", name="Reset Test")
+    conversation = DbRepository.create_conversation(db_session, tenant_id=1, lead_id=lead.id, channel_config_id=1)
+    DbRepository.create_message(db_session, conversation_id=conversation.id, sender_type="lead", text="Oi")
+    DbRepository.create_handoff(db_session, lead_id=lead.id, conversation_id=conversation.id, reason="test")
+
+    response = client.post("/test/reset-conversation", json={
+        "number": "5511999999999",
+        "instance_name": "ImobiliariaAlfa"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["deleted"]["conversations"] == 1
+    assert data["deleted"]["messages"] == 1
+    assert data["deleted"]["handoffs"] == 1
+    assert data["deleted"]["qualification"] is True
+    assert DbRepository.get_lead_by_number(db_session, 1, "5511999999999") is None
+
+
 def test_finalize_reply_recovers_truncated_generation():
     reply = finalize_reply(
         "Olá! Que ótimo que",

@@ -177,3 +177,9 @@ class TestGenerateRequest(BaseModel):
     tenant_id: int
     text: str
     number: str
+
+
+class ResetConversationRequest(BaseModel):
+    number: str
+    tenant_id: Optional[int] = None
+    instance_name: Optional[str] = None

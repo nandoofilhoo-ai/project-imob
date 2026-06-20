@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.core.database import get_db
 from src.core.logger import get_logger
-from src.schemas.schemas import TestSendRequest, TestGenerateRequest
+from src.schemas.schemas import TestSendRequest, TestGenerateRequest, ResetConversationRequest
 from src.repositories.db_repositories import DbRepository
 from src.integrations.whatsapp_provider import get_whatsapp_provider
 from src.services.llm_adapter import PromptBuilder, get_llm_provider, finalize_reply
 from src.services.rule_engine import RuleEngine
 from src.services.qualification_service import QualificationService
+from src.models.db_models import Lead
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -115,4 +116,59 @@ def test_generate(payload: TestGenerateRequest, db: Session = Depends(get_db)):
         },
         "prompt_evaluated": prompt,
         "reply": reply_text
+    }
+
+
+@router.post("/test/reset-conversation")
+def reset_conversation(payload: ResetConversationRequest, db: Session = Depends(get_db)):
+    """
+    Clears the local conversation context for a lead so the next inbound message starts fresh.
+    Deletes the lead and all cascaded local records (qualification, conversations, messages, handoffs).
+    """
+    tenant_id = payload.tenant_id
+    if tenant_id is None:
+        if payload.instance_name:
+            channel = DbRepository.get_channel_by_instance(db, "evolution", payload.instance_name)
+        else:
+            active_channels = DbRepository.list_active_channels(db)
+            channel = next((c for c in active_channels if c.provider == "evolution"), None)
+
+        if not channel:
+            raise HTTPException(status_code=404, detail="No active Evolution channel config found to resolve tenant.")
+        tenant_id = channel.tenant_id
+
+    lead = DbRepository.get_lead_by_number(db, tenant_id, payload.number)
+    if not lead:
+        return {
+            "status": "noop",
+            "tenant_id": tenant_id,
+            "number": payload.number,
+            "message": "No local conversation context found for this number."
+        }
+
+    conversation_count = len(lead.conversations or [])
+    message_count = sum(len(conversation.messages or []) for conversation in (lead.conversations or []))
+    handoff_count = len(lead.handoffs or [])
+    qualification_exists = lead.qualifications is not None
+
+    db.delete(lead)
+    db.commit()
+
+    logger.info(
+        f"Reset local conversation context for tenant={tenant_id}, number={payload.number}. "
+        f"Deleted lead_id={lead.id}, conversations={conversation_count}, messages={message_count}, "
+        f"handoffs={handoff_count}, qualification={qualification_exists}"
+    )
+
+    return {
+        "status": "success",
+        "tenant_id": tenant_id,
+        "number": payload.number,
+        "deleted": {
+            "lead_id": lead.id,
+            "conversations": conversation_count,
+            "messages": message_count,
+            "handoffs": handoff_count,
+            "qualification": qualification_exists
+        }
     }
