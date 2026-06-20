@@ -3,7 +3,7 @@ from src.services.qualification_service import QualificationService
 from src.services.rule_engine import RuleEngine
 from src.models.db_models import Lead, Conversation, LeadQualification
 from src.repositories.db_repositories import DbRepository
-from src.services.llm_adapter import get_llm_provider, PromptBuilder
+from src.services.llm_adapter import get_llm_provider, PromptBuilder, finalize_reply
 
 def test_qualification_heuristics(db_session):
     # Create test lead
@@ -148,6 +148,22 @@ def test_gemini_provider_joins_multiple_text_parts(monkeypatch):
     provider = GeminiProvider(api_key="mock-gemini-key")
     reply = provider.generate_reply(prompt="Oi", system_instruction="Instrucao")
     assert reply == "Olá! Que ótimo que você quer comprar uma casa. E em qual bairro ou região você tem preferência?"
+
+
+def test_finalize_reply_recovers_truncated_generation():
+    reply = finalize_reply(
+        "Olá! Que ótimo que",
+        "E em qual bairro ou região você tem preferência?"
+    )
+    assert reply == "Entendi! E em qual bairro ou região você tem preferência?"
+
+
+def test_finalize_reply_appends_missing_question_when_needed():
+    reply = finalize_reply(
+        "Perfeito, vou te ajudar",
+        "E em qual bairro ou região você tem preferência?"
+    )
+    assert reply == "Perfeito, vou te ajudar. E em qual bairro ou região você tem preferência?"
 
 
 # Helpers

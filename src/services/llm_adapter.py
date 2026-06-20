@@ -52,6 +52,24 @@ Gere a resposta para o WhatsApp do cliente seguindo as diretrizes acima:"""
         return prompt
 
 
+def finalize_reply(reply: Optional[str], suggested_question: Optional[str] = None) -> str:
+    cleaned_reply = " ".join((reply or "").split()).strip()
+    cleaned_question = " ".join((suggested_question or "").split()).strip()
+
+    if not cleaned_reply:
+        return f"Entendi! {cleaned_question}".strip() if cleaned_question else "Como posso te ajudar?"
+
+    if cleaned_question:
+        if len(cleaned_reply) < 20:
+            return f"Entendi! {cleaned_question}".strip()
+
+        if cleaned_question not in cleaned_reply and "?" not in cleaned_reply:
+            suffix = cleaned_reply.rstrip(" .!?")
+            return f"{suffix}. {cleaned_question}".strip()
+
+    return cleaned_reply
+
+
 class LlmProvider:
     def generate_reply(self, prompt: str, system_instruction: str = "Você é um assistente de vendas imobiliárias.") -> str:
         pass

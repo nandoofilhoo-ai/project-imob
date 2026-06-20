@@ -5,7 +5,7 @@ from src.integrations.whatsapp_provider import NormalizedMessage, get_whatsapp_p
 from src.repositories.db_repositories import DbRepository
 from src.services.qualification_service import QualificationService
 from src.services.rule_engine import RuleEngine
-from src.services.llm_adapter import PromptBuilder, get_llm_provider
+from src.services.llm_adapter import PromptBuilder, get_llm_provider, finalize_reply
 from src.services.chatwoot_client import ChatwootClient
 
 logger = get_logger(__name__)
@@ -166,10 +166,11 @@ class InboundOrchestrator:
                 
                 try:
                     llm_provider = get_llm_provider(suggested_question=decision["suggested_reply"])
-                    reply_text = llm_provider.generate_reply(prompt)
+                    raw_reply = llm_provider.generate_reply(prompt)
+                    reply_text = finalize_reply(raw_reply, decision["suggested_reply"])
                 except Exception as ex:
                     logger.error(f"Orchestrator: LLM failed to generate reply: {ex}. Using fallback.")
-                    reply_text = decision["suggested_reply"] or "Como posso te ajudar?"
+                    reply_text = finalize_reply(None, decision["suggested_reply"])
 
             # Send WhatsApp message via provider
             if reply_text:

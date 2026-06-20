@@ -5,7 +5,7 @@ from src.core.logger import get_logger
 from src.schemas.schemas import TestSendRequest, TestGenerateRequest
 from src.repositories.db_repositories import DbRepository
 from src.integrations.whatsapp_provider import get_whatsapp_provider
-from src.services.llm_adapter import PromptBuilder, get_llm_provider
+from src.services.llm_adapter import PromptBuilder, get_llm_provider, finalize_reply
 from src.services.rule_engine import RuleEngine
 from src.services.qualification_service import QualificationService
 
@@ -100,7 +100,8 @@ def test_generate(payload: TestGenerateRequest, db: Session = Depends(get_db)):
                 suggested_question=decision["suggested_reply"]
             )
             llm_provider = get_llm_provider(suggested_question=decision["suggested_reply"])
-            reply_text = llm_provider.generate_reply(prompt)
+            raw_reply = llm_provider.generate_reply(prompt)
+            reply_text = finalize_reply(raw_reply, decision["suggested_reply"])
 
     return {
         "decision": decision,
