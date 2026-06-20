@@ -63,6 +63,11 @@ def finalize_reply(reply: Optional[str], suggested_question: Optional[str] = Non
         if len(cleaned_reply) < 20:
             return f"Entendi! {cleaned_question}".strip()
 
+        trailing_word = cleaned_reply.rstrip(" .!?").split()[-1].lower()
+        suspicious_trailing_words = {"que", "você", "vc", "de", "do", "da", "para", "pra", "com", "e"}
+        if trailing_word in suspicious_trailing_words:
+            return f"Entendi! {cleaned_question}".strip()
+
         if cleaned_question not in cleaned_reply and "?" not in cleaned_reply:
             suffix = cleaned_reply.rstrip(" .!?")
             return f"{suffix}. {cleaned_question}".strip()

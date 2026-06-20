@@ -158,6 +158,14 @@ def test_finalize_reply_recovers_truncated_generation():
     assert reply == "Entendi! E em qual bairro ou região você tem preferência?"
 
 
+def test_finalize_reply_recovers_incomplete_sentence_even_when_longer():
+    reply = finalize_reply(
+        "Olá! Que ótimo que você",
+        "E em qual bairro ou região você tem preferência?"
+    )
+    assert reply == "Entendi! E em qual bairro ou região você tem preferência?"
+
+
 def test_finalize_reply_appends_missing_question_when_needed():
     reply = finalize_reply(
         "Perfeito, vou te ajudar",
