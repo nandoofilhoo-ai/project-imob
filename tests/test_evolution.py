@@ -33,6 +33,34 @@ def test_evolution_payload_normalization():
     assert normalized.is_group is False
 
 
+def test_evolution_payload_normalization_accepts_uppercase_event_name():
+    provider = EvolutionProvider()
+
+    payload = {
+        "event": "MESSAGES_UPSERT",
+        "instance": "Suporte",
+        "data": {
+            "key": {
+                "remoteJid": "5511999999999@s.whatsapp.net",
+                "fromMe": False,
+                "id": "XYZ"
+            },
+            "pushName": "John Doe",
+            "message": {
+                "conversation": "Olá, estou buscando comprar um apartamento"
+            },
+            "messageTimestamp": 1670000000
+        }
+    }
+
+    normalized = provider.normalize_inbound(payload)
+
+    assert normalized is not None
+    assert normalized.instance_name == "Suporte"
+    assert normalized.number == "5511999999999"
+    assert normalized.text == "Olá, estou buscando comprar um apartamento"
+
+
 def test_webhook_evolution_endpoint(client, db_session):
     payload = {
         "event": "messages.upsert",
@@ -100,4 +128,54 @@ def test_test_send_evolution_mock(client):
         assert response.json()["recipient"] == "5511999999999"
     finally:
         src.integrations.whatsapp_provider.EvolutionProvider.send_text = original_send
+
+
+def test_evolution_set_webhook_sends_non_base64_payload():
+    from src.models.db_models import ChannelConfig
+    import src.integrations.whatsapp_provider as provider_module
+
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {"ok": True}
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, endpoint, json=None, headers=None, timeout=None):
+            captured["endpoint"] = endpoint
+            captured["json"] = json
+            captured["headers"] = headers
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+    original_client = provider_module.httpx.Client
+    provider_module.httpx.Client = FakeClient
+
+    try:
+        channel = ChannelConfig(
+            provider_instance_id="Suporte",
+            provider_token="instance-token",
+            provider_url="https://evolution.example.com",
+        )
+        result = EvolutionProvider().set_webhook(
+            channel,
+            "https://backend.example.com/webhook/evolution"
+        )
+    finally:
+        provider_module.httpx.Client = original_client
+
+    assert result["success"] is True
+    assert captured["endpoint"] == "https://evolution.example.com/webhook/set/Suporte"
+    assert captured["headers"]["apikey"] == "instance-token"
+    assert captured["json"]["webhook"]["url"] == "https://backend.example.com/webhook/evolution"
+    assert captured["json"]["webhook"]["webhookByEvents"] is True
+    assert captured["json"]["webhook"]["webhookBase64"] is False
 

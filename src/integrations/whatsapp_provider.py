@@ -76,9 +76,10 @@ class EvolutionProvider(WhatsAppProvider):
         }
         """
         try:
-            event = payload.get("event", "")
-            # We only handle messages.upsert / MESSAGES_UPSERT for inbound messages
-            if "messages.upsert" not in event.lower():
+            event = str(payload.get("event", "") or "")
+            normalized_event = event.lower().replace("_", ".")
+            # Accept both messages.upsert and MESSAGES_UPSERT styles from Evolution.
+            if normalized_event != "messages.upsert":
                 return None
 
             instance_name = payload.get("instance")
