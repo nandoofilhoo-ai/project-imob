@@ -150,8 +150,13 @@ class GeminiProvider(LlmProvider):
                         content = candidates[0].get("content", {})
                         parts = content.get("parts", [])
                         if parts:
-                            reply = parts[0].get("text", "").strip()
-                            return reply
+                            reply = "".join(
+                                part.get("text", "")
+                                for part in parts
+                                if isinstance(part, dict) and part.get("text")
+                            ).strip()
+                            if reply:
+                                return reply
                 
                 logger.error(f"Gemini API error: {response.status_code} - {response.text}")
                 raise Exception(f"Gemini returned status {response.status_code}")

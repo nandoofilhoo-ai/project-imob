@@ -123,6 +123,33 @@ def test_gemini_provider_mock(monkeypatch):
     assert reply == "Olá! Você prefere casa ou apartamento?"
 
 
+def test_gemini_provider_joins_multiple_text_parts(monkeypatch):
+    import httpx
+
+    class MockResponse:
+        status_code = 200
+        def json(self):
+            return {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {"text": "Olá! Que ótimo que você quer comprar uma casa. "},
+                                {"text": "E em qual bairro ou região você tem preferência?"}
+                            ]
+                        }
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(httpx.Client, "post", lambda *args, **kwargs: MockResponse())
+
+    from src.services.llm_adapter import GeminiProvider
+    provider = GeminiProvider(api_key="mock-gemini-key")
+    reply = provider.generate_reply(prompt="Oi", system_instruction="Instrucao")
+    assert reply == "Olá! Que ótimo que você quer comprar uma casa. E em qual bairro ou região você tem preferência?"
+
+
 # Helpers
 def DbSession_get_qualification(db: Session, lead_id: int) -> LeadQualification:
     return db.query(LeadQualification).filter(LeadQualification.lead_id == lead_id).first()
